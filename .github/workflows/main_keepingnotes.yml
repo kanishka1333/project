@@ -28,8 +28,8 @@ jobs:
           source venv/bin/activate
       
       - name: Install dependencies
-        run: pip install -r requirements.
-            pip install --upgrade pip
+        run:pip install -r 
+        https://raw.githubusercontent.com/yotestyo/test/main/requirements.txt
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
       
