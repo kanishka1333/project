@@ -1,8 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
-name: Build and deploy Python keeping notes app to Azure Web App
+name: Build and deploy Python app to Azure Web App
 
 on:
   push:
@@ -10,49 +6,73 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  AZURE_WEBAPP_NAME: keepingnotes
+  AZURE_WEBAPP_PACKAGE_PATH: '.'
+  PYTHON_VERSION: '3.8'
+  NODE_VERSION: '12.x'
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python version
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: 'x64'
 
-      - name: Create virtual environment
-        run: |
-          python -m venv env
-          source env/bin/activate
+    - name: Install dependencies
+      run: |
+        python -m venv env
+        source env/bin/activate
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+    - name: Build the app
+      run: |
+        python manage.py collectstatic --noinput
+        python manage.py compress --force
 
-      - name: Run tests
-        run: pytest
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: python-app
-          path: .
+    - name: Archive the app
+      uses: actions/upload-artifact@v2
+      with:
+        name: keepingnotes
+        path: .
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: python-app
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: keepingnotes
+        path: .
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: 'keeping notes'
-          slot-name: 'production'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ env.NODE_VERSION }}
 
+    - name: Install Azure CLI
+      uses: azure/cli@v1
+      with:
+        inlineScript: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
