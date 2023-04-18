@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Notes</title>
+</head>
+<body>
+    <h1>View Notes</h1>
+    {% if notes %}
+        <ul>
+        {% for note in notes %}
+            <li><strong>{{ note[1] }}</strong><br>{{ note[2] }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No notes yet!</p>
+    {% endif %}
+</body>
+</html>
